@@ -1,141 +1,206 @@
-<?php
-session_start();
-
-// تنظیمات
-define('FINNHUB_API_KEY', 'cvs3o99r01qvc2mujen0cvs3o99r01qvc2mujeng'); // کلید API
-$users = [
-    'investor1' => 'password123', // نام کاربری و رمز نمونه
-    'investor2' => 'password456'
-];
-
-// چک کردن لاگین
-function isLoggedIn() {
-    return isset($_SESSION['user']);
-}
-
-// مدیریت لاگین
-if (isset($_POST['login'])) {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    global $users;
-    if (isset($users[$username]) && $users[$username] === $password) {
-        $_SESSION['user'] = $username;
-    } else {
-        $error = 'نام کاربری یا رمز اشتباهه!';
-    }
-}
-
-// خروج
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: trader.php');
-}
-
-// تحلیل بازار
-$result = '';
-if (isLoggedIn() && isset($_POST['symbol'])) {
-    $symbol = strtoupper(trim($_POST['symbol']));
-    
-    // دریافت قیمت فعلی
-    $quoteUrl = "https://finnhub.io/api/v1/quote?symbol=$symbol&token=" . FINNHUB_API_KEY;
-    $quoteData = @json_decode(@file_get_contents($quoteUrl), true);
-    
-    if (!$quoteData || !$quoteData['c']) {
-        $result = 'نماد اشتباهه یا داده‌ای نیست!';
-    } else {
-        // دریافت داده‌های تاریخی
-        $histUrl = "https://finnhub.io/api/v1/stock/candle?symbol=$symbol&resolution=D&count=50&token=" . FINNHUB_API_KEY;
-        $histData = @json_decode(@file_get_contents($histUrl), true);
-        
-        $signal = 'خنثی';
-        $explanation = '';
-        
-        if ($histData && $histData['s'] === 'ok') {
-            $closes = $histData['c'];
-            
-            // محاسبه میانگین متحرک
-            function calculateMovingAverage($prices, $period) {
-                $ma = [];
-                for ($i = $period - 1; $i < count($prices); $i++) {
-                    $slice = array_slice($prices, $i - $period + 1, $period);
-                    $avg = array_sum($slice) / $period;
-                    $ma[] = $avg;
-                }
-                return $ma;
-            }
-            
-            $maShort = calculateMovingAverage($closes, 10);
-            $maLong = calculateMovingAverage($closes, 50);
-            
-            $lastShort = end($maShort);
-            $lastLong = end($maLong);
-            
-            if ($lastShort > $lastLong) {
-                $signal = 'خرید';
-                $explanation = 'میانگین متحرک کوتاه‌مدت بالاتر از بلندمدته (روند صعودی).';
-            } elseif ($lastShort < $lastLong) {
-                $signal = 'فروش';
-                $explanation = 'میانگین متحرک کوتاه‌مدت پایین‌تر از بلندمدته (روند نزولی).';
-            } else {
-                $explanation = 'روند مشخص نیست.';
-            }
-            
-            $result = "قیمت فعلی $symbol: $" . number_format($quoteData['c'], 2) . "\n";
-            $result .= "سیگنال: $signal\n";
-            $result .= "توضیح: $explanation";
-        } else {
-            $result = "خطا در دریافت داده‌های تاریخی!";
-        }
-    }
-}
-?>
-
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ربات معامله‌گر</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANTUM TRADER | Trading Bot</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            direction: rtl;
-            margin: 20px;
+        :root {
+            --primary-color: #00ff88;
+            --dark-bg: #0f0f1a;
+            --darker-bg: #070710;
+            --text-color: #ffffff;
+            --secondary-text: #aaaaaa;
         }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border: 1px solid var(--primary-color);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(to right, var(--primary-color), #00a2ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
         input, button {
             padding: 10px;
-            margin: 5px;
-            font-size: 16px;
+            margin: 10px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid var(--primary-color);
+            background: var(--darker-bg);
+            color: var(--text-color);
         }
-        .error, .result {
+        
+        button {
+            cursor: pointer;
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+        }
+        
+        button:hover {
+            background: #00cc70;
+        }
+        
+        #result, #error {
             margin-top: 20px;
-            font-size: 18px;
+            font-size: 1.2rem;
         }
-        .error { color: red; }
-        .result { color: green; }
+        
+        #error {
+            color: #ff4d4d;
+        }
+        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <?php if (!isLoggedIn()): ?>
-        <h1>ورود به ربات معامله‌گر</h1>
-        <form method="POST">
-            <input type="text" name="username" placeholder="نام کاربری" required>
-            <input type="password" name="password" placeholder="رمز عبور" required>
-            <button type="submit" name="login">ورود</button>
-        </form>
-        <?php if (isset($error)): ?>
-            <div class="error"><?php echo $error; ?></div>
-        <?php endif; ?>
-    <?php else: ?>
-        <h1>ربات معامله‌گر</h1>
-        <p>خوش اومدی، <?php echo $_SESSION['user']; ?>! <a href="?logout=1">خروج</a></p>
-        <form method="POST">
-            <input type="text" name="symbol" placeholder="نماد (مثل AAPL)" required>
-            <button type="submit">شروع تحلیل</button>
-        </form>
-        <?php if ($result): ?>
-            <div class="result"><?php echo nl2br(htmlspecialchars($result)); ?></div>
-        <?php endif; ?>
-    <?php endif; ?>
+    <div class="container">
+        <h1>QUANTUM TRADING BOT</h1>
+        
+        <div id="login-section">
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <div id="error"></div>
+        </div>
+        
+        <div id="bot-section" class="hidden">
+            <p>Welcome, <span id="user-display"></span>! <button onclick="logout()">Logout</button></p>
+            <input type="text" id="symbol" placeholder="Crypto Symbol (e.g., BTC-USD)">
+            <button onclick="analyze()">Analyze</button>
+            <div id="result"></div>
+        </div>
+    </div>
+    
+    <script>
+        // لاگین ساده (برای دمو)
+        const users = {
+            'investor1': 'password123',
+            'investor2': 'password456'
+        };
+        
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error');
+            
+            if (users[username] && users[username] === password) {
+                localStorage.setItem('user', username);
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('bot-section').classList.remove('hidden');
+                document.getElementById('user-display').textContent = username;
+                errorDiv.textContent = '';
+            } else {
+                errorDiv.textContent = 'Invalid username or password!';
+            }
+        }
+        
+        function logout() {
+            localStorage.removeItem('user');
+            document.getElementById('login-section').classList.remove('hidden');
+            document.getElementById('bot-section').classList.add('hidden');
+            document.getElementById('result').textContent = '';
+        }
+        
+        // چک کردن لاگین موقع لود
+        if (localStorage.getItem('user')) {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('bot-section').classList.remove('hidden');
+            document.getElementById('user-display').textContent = localStorage.getItem('user');
+        }
+        
+        async function analyze() {
+            const symbol = document.getElementById('symbol').value.toUpperCase();
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Analyzing...';
+            
+            try {
+                // فرض می‌کنیم یه پراکسی داریم
+                // بعداً باید با PHP یا Firebase جایگزین بشه
+                const quoteUrl = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=YOUR_API_KEY`;
+                const histUrl = `https://finnhub.io/api/v1/crypto/candle?symbol=BINANCE:${symbol}&resolution=D&count=50&token=YOUR_API_KEY`;
+                
+                // برای تست، فعلاً API رو مستقیم فرض می‌کنیم (امن نیست!)
+                // باید پراکسی اضافه بشه
+                const quoteResponse = await fetch(quoteUrl);
+                const quoteData = await quoteResponse.json();
+                
+                if (!quoteData.c) {
+                    resultDiv.textContent = 'Invalid symbol or no data!';
+                    return;
+                }
+                
+                const histResponse = await fetch(histUrl);
+                const histData = await histResponse.json();
+                
+                let signal = 'Neutral';
+                let explanation = '';
+                
+                if (histData.s === 'ok') {
+                    const closes = histData.c;
+                    
+                    function calculateMovingAverage(prices, period) {
+                        const ma = [];
+                        for (let i = period - 1; i < prices.length; i++) {
+                            const slice = prices.slice(i - period + 1, i + 1);
+                            const avg = slice.reduce((sum, p) => sum + p, 0) / period;
+                            ma.push(avg);
+                        }
+                        return ma;
+                    }
+                    
+                    const maShort = calculateMovingAverage(closes, 10);
+                    const maLong = calculateMovingAverage(closes, 50);
+                    
+                    const lastShort = maShort[maShort.length - 1];
+                    const lastLong = maLong[maLong.length - 1];
+                    
+                    if (lastShort > lastLong) {
+                        signal = 'Buy';
+                        explanation = 'Short-term MA is above long-term MA (Bullish trend).';
+                    } else if (lastShort < lastLong) {
+                        signal = 'Sell';
+                        explanation = 'Short-term MA is below long-term MA (Bearish trend).';
+                    } else {
+                        explanation = 'No clear trend.';
+                    }
+                    
+                    resultDiv.textContent = `
+                        Current Price: $${quoteData.c.toFixed(2)}
+                        Signal: ${signal}
+                        Explanation: ${explanation}
+                    `;
+                } else {
+                    resultDiv.textContent = 'Error fetching historical data!';
+                }
+            } catch (error) {
+                resultDiv.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
 </body>
 </html>
