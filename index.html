@@ -209,6 +209,7 @@
             <div class="cta-buttons">
                 <button class="btn btn-primary">JOIN NOW</button>
                 <button class="btn btn-secondary">LEARN MORE</button>
+                <a href="trader.html" class="btn btn-secondary">TRADING BOT</a>
             </div>
         </div>
     </div>
@@ -270,7 +271,7 @@
             elements.forEach((el, index) => {
                 const currentPrice = parseFloat(el.textContent.replace(/[^0-9.]/g, ''));
                 const changePercent = (Math.random() * 6 - 3).toFixed(2);
-                const newPrice = (currentPrice * (1 + parseFloat(changePercent)/100).toFixed(4);
+                const newPrice = (currentPrice * (1 + parseFloat(changePercent)/100)).toFixed(4);
                 
                 if (changePercent >= 0) {
                     el.className = 'price-up';
