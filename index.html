@@ -1,23 +1,18 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ترید و سرمایه‌گذاری</title>
+    <title>Trading & Investment</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background: linear-gradient(45deg, #ff6f61, #6b48ff, #00ddeb, #ff6f61);
             background-size: 400%;
             animation: gradient 15s ease infinite;
-            direction: rtl;
-            overflow: hidden;
+            direction: ltr;
         }
 
         @keyframes gradient {
@@ -26,11 +21,15 @@
             100% { background-position: 0% 50%; }
         }
 
-        .container {
+        .hero-section {
             text-align: center;
             color: white;
-            padding: 20px;
-            max-width: 90%;
+            padding: 50px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         h1 {
@@ -66,6 +65,21 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
+        .chart-icon {
+            position: absolute;
+            font-size: 5em;
+            opacity: 0.2;
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .chart-icon:nth-child(1) { top: 10%; left: 10%; }
+        .chart-icon:nth-child(2) { bottom: 10%; right: 10%; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
         @keyframes fadeInDown {
             from { opacity: 0; transform: translateY(-50px); }
             to { opacity: 1; transform: translateY(0); }
@@ -81,29 +95,73 @@
             to { opacity: 1; }
         }
 
-        .chart-icon {
-            position: absolute;
-            font-size: 5em;
-            opacity: 0.2;
-            animation: float 5s ease-in-out infinite;
+        .about-section {
+            background-color: #fff;
+            color: #333;
+            padding: 50px 20px;
+            text-align: center;
         }
 
-        .chart-icon:nth-child(1) { top: 10%; left: 10%; }
-        .chart-icon:nth-child(2) { bottom: 10%; right: 10%; }
+        .about-section h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+        .investment-section {
+            background-color: #f9f9f9;
+            color: #333;
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        .investment-section h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .investment-amount {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 20px 0;
+        }
+
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <div class="chart-icon">📈</div>
-    <div class="chart-icon">💹</div>
-    <div class="container">
-        <h1>به دنیای ترید و سرمایه‌گذاری خوش اومدی!</h1>
-        <p>بهترین استراتژی‌ها برای سود حداکثری در سال ۲۰۲۵</p>
-        <a href="#" class="button">همین حالا شروع کن</a>
+    <!-- بخش اصلی (Hero Section) -->
+    <div class="hero-section">
+        <div class="chart-icon">📈</div>
+        <div class="chart-icon">💹</div>
+        <div class="container">
+            <h1>Welcome to the World of Trading & Investment!</h1>
+            <p>Best Strategies for Maximum Profit in 2025</p>
+            <a href="#" class="button">Start Now</a>
+        </div>
     </div>
+
+    <!-- بخش درباره سایت -->
+    <div class="about-section">
+        <h2>About Us</h2>
+        <p>We are a platform dedicated to helping you succeed in trading and investment. Our mission is to provide you with the best strategies, tools, and insights to maximize your profits and grow your wealth. Join thousands of investors who trust us!</p>
+    </div>
+
+    <!-- بخش مقدار سرمایه‌گذاری -->
+    <div class="investment-section">
+        <h2>Total Investment on Our Platform</h2>
+        <p>See how much our users have invested with us!</p>
+        <div class="investment-amount" id="investmentAmount">$12,345,678</div>
+    </div>
+
+    <!-- اسکریپت برای انیمیشن مقدار سرمایه‌گذاری -->
+    <script>
+        const investmentAmount = document.getElementById('investmentAmount');
+        investmentAmount.style.opacity = 0;
+        investmentAmount.style.animation = 'countUp 1s ease forwards 0.5s';
+    </script>
 </body>
 </html>
